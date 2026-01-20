@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balap Karung Buah Arab - 10 Soal Berbeda</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #e0f2f7; text-align: center; margin: 0; overflow: hidden; }
+        
+        /* Lintasan Balap */
+        #track { height: 40vh; background: linear-gradient(#b2ebf2, #80deea); border-bottom: 10px solid #00acc1; position: relative; }
+        .lane { height: 33.3%; border-bottom: 1px dashed rgba(255,255,255,0.7); position: relative; display: flex; align-items: center; }
+        .finish { position: absolute; right: 20px; top: 0; bottom: 0; width: 25px; background: repeating-linear-gradient(black, black 5px, white 5px, white 10px); }
+        
+        /* Avatar Menghadap Depan */
+        .char { 
+            position: absolute; 
+            left: 10px; 
+            font-size: 48px; 
+            transition: left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            z-index: 5; 
+            transform: scaleX(-1); 
+        }
+
+        /* Panel Kontrol */
+        #controls { height: 60vh; display: flex; background: #00838f; padding: 10px; gap: 10px; }
+        .p-box { flex: 1; background: white; border-radius: 15px; display: flex; flex-direction: column; align-items: center; padding: 10px; box-shadow: 0 6px 15px rgba(0,0,0,0.4); }
+        
+        .p1 { border-top: 8px solid #ef5350; } 
+        .p2 { border-top: 8px solid #29b6f6; } 
+        .p3 { border-top: 8px solid #f39c12; }
+
+        .word-target { font-size: 42px; font-weight: bold; margin: 10px 0; background: #e0f7fa; width: 90%; padding: 15px; border-radius: 10px; color: #006064; min-height: 60px; line-height: 1.2; }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 8px; width: 100%; }
+        
+        button { font-size: 22px; padding: 18px 5px; border: none; border-radius: 10px; background: #e0f2f7; cursor: pointer; font-weight: bold; color: #00838f; transition: 0.2s; }
+        button:active { background: #80deea; transform: scale(0.98); }
+        
+        .label { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .score-info { font-size: 14px; color: #666; margin-top: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="track">
+    <div class="finish"></div>
+    <div class="lane"><div id="c1" class="char">🏃‍♂️</div></div>
+    <div class="lane"><div id="c2" class="char">🏃‍♀️</div></div>
+    <div class="lane"><div id="c3" class="char">🏇</div></div>
+</div>
+
+<div id="controls">
+    <div class="p-box p1">
+        <div class="label" style="color:#ef5350">PEMAIN 1</div>
+        <div id="q1" class="word-target"></div>
+        <div id="o1" class="grid"></div>
+        <div class="score-info">Soal ke: <span id="s1">0</span>/10</div>
+    </div>
+    <div class="p-box p2">
+        <div class="label" style="color:#29b6f6">PEMAIN 2</div>
+        <div id="q2" class="word-target"></div>
+        <div id="o2" class="grid"></div>
+        <div class="score-info">Soal ke: <span id="s2">0</span>/10</div>
+    </div>
+    <div class="p-box p3">
+        <div class="label" style="color:#f39c12">PEMAIN 3</div>
+        <div id="q3" class="word-target"></div>
+        <div id="o3" class="grid"></div>
+        <div class="score-info">Soal ke: <span id="s3">0</span>/10</div>
+    </div>
+</div>
+
+<script>
+    const masterData = [
+        { ar: "تُفَّاحَةٌ", id: "Apel" }, 
+        { ar: "مَوْزٌ", id: "Pisang" },
+        { ar: "بُرْتُقَالٌ", id: "Jeruk" }, 
+        { ar: "عِنَبٌ", id: "Anggur" },
+        { ar: "بِطِّيْخٌ", id: "Semangka" }, 
+        { ar: "أَنَانَاسٌ", id: "Nanas" },
+        { ar: "مَانْجَا", id: "Mangga" }, 
+        { ar: "تَمْرٌ", id: "Kurma" },
+        { ar: "أَفُوكَادُو", id: "Alpukat" }, 
+        { ar: "رُمَّانٌ", id: "Delima" }
+    ];
+
+    // Variabel untuk menyimpan antrean soal tiap pemain
+    let playerDecks = { c1: [], c2: [], c3: [] };
+    let scores = { c1: 0, c2: 0, c3: 0 };
+    let currentSoal = { c1: null, c2: null, c3: null };
+
+    // Fungsi untuk mengocok array (Fisher-Yates Shuffle)
+    function shuffle(array) {
+        let currentIndex = array.length;
+        while (currentIndex != 0) {
+            let randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return [...array];
+    }
+
+    function generateQuestion(pID) {
+        // Ambil soal dari antrean deck pemain
+        if (playerDecks[pID].length === 0) return;
+
+        const soalAktif = playerDecks[pID].pop();
+        currentSoal[pID] = soalAktif;
+        
+        document.getElementById('q' + pID.slice(-1)).innerText = soalAktif.ar;
+
+        // Buat Opsi Jawaban (1 benar + 2 acak dari masterData)
+        let options = [soalAktif.id];
+        while(options.length < 3) {
+            let randomId = masterData[Math.floor(Math.random() * masterData.length)].id;
+            if(!options.includes(randomId)) options.push(randomId);
+        }
+        options = shuffle(options);
+
+        const container = document.getElementById('o' + pID.slice(-1));
+        container.innerHTML = "";
+        options.forEach(text => {
+            const btn = document.createElement('button');
+            btn.innerText = text;
+            btn.onclick = () => check(pID, text);
+            container.appendChild(btn);
+        });
+    }
+
+    function check(p, val) {
+        if(val === currentSoal[p].id) {
+            scores[p]++;
+            document.getElementById('s' + p.slice(-1)).innerText = scores[p];
+            document.getElementById(p).style.left = (scores[p]/10 * 88) + "%";
+            
+            if(scores[p] >= 10) {
+                setTimeout(() => {
+                    alert("MABRUK! Pemain " + p.slice(-1) + " Menang! Semua soal terjawab! 🎉");
+                    initGame();
+                }, 300);
+            } else { 
+                generateQuestion(p);
+            }
+        }
+    }
+
+    function initGame() {
+        scores = { c1: 0, c2: 0, c3: 0 };
+        // Siapkan deck unik untuk masing-masing pemain
+        playerDecks.c1 = shuffle([...masterData]);
+        playerDecks.c2 = shuffle([...masterData]);
+        playerDecks.c3 = shuffle([...masterData]);
+
+        // Reset Tampilan
+        ['c1', 'c2', 'c3'].forEach(p => {
+            document.getElementById(p).style.left = "10px";
+            document.getElementById('s' + p.slice(-1)).innerText = "0";
+            generateQuestion(p);
+        });
+    }
+
+    // Jalankan pertama kali
+    initGame();
+</script>
+</body>
+</html>
